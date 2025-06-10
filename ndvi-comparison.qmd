@@ -22,13 +22,14 @@ execute:
 
 # Introduction
 
-The following report compares the measures of NDVI measured with a RapidScan handheld and satelite derived NDVI from Sentinel 2, as well as assessing the importance of accurate georeferencing of plot, when doing such comparisons. 
+The following report compares the measures of NDVI measured with a RapidScan handheld and satelite derived NDVI from Sentinel 2, as well as assessing the importance of accurate georeferencing of plot, when doing such comparisons.
 
 ## BioBasis NDVI sampling
 
 NDVI have been measured as part of the BioBasis Nuuk sampling protocal since 2007. Measurements of NDVI have been done in c-flux plots, phenology plots and along the NERO line. NDVI measurements in c-flux plots have been done with a SpectroSence2 (REF), in phenology plots and along the NERO line it was measured with a CropCircle (REF) from 2007 - 2017). From 2018 NDVI has been measured with a RapidScan from Holland Scientific.
 
 ```{r}
+#| label: loading-p
 #| echo: false
 #| warning: false
 #| message: false
@@ -47,6 +48,19 @@ ndvi_biobasis_dates <- biobasis_ndvi |>
 ```
 
 There are measurements from `r min(biobasis_ndvi$Date)` and `r max(biobasis_ndvi$Date)`, and from a total of `r length(unique(biobasis_ndvi$Date))` individual days of measurements from the `r length(unique(biobasis_ndvi$plot_id))` plots.
+
+NDVI is measured as a mean (calculated by the RapidScan) for each subsection of the phenology plot. For the comparison with Sentinel a further mean is calculate pr plot.
+
+```{r}
+#| label: data-prep-comparison
+
+biobasis_ndvi_meanprplot <- biobasis_ndvi |> 
+  group_by(Date, plot_id) |> 
+  summarise(mean = mean(NDVI), 
+            year = mean(year(Date)))
+
+
+```
 
 ## Sentinel 'sampling'
 
