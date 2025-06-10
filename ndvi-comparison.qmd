@@ -15,28 +15,52 @@ format:
     colorlinks: true
 editor: visual
 execute: 
-  echo: false
-  warning: false
-  message: false
+   echo: false
+#  warning: false
+#  message: false
 ---
 
-## Quarto
+# Introduction
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+The following report compares the measures of NDVI measured with a RapidScan handheld and satelite derived NDVI from Sentinel 2, as well as assessing the importance of accurate georeferencing of plot, when doing such comparisons. 
 
-## Running Code
+## BioBasis NDVI sampling
 
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+NDVI have been measured as part of the BioBasis Nuuk sampling protocal since 2007. Measurements of NDVI have been done in c-flux plots, phenology plots and along the NERO line. NDVI measurements in c-flux plots have been done with a SpectroSence2 (REF), in phenology plots and along the NERO line it was measured with a CropCircle (REF) from 2007 - 2017). From 2018 NDVI has been measured with a RapidScan from Holland Scientific.
 
 ```{r}
-1 + 1
+#| echo: false
+#| warning: false
+#| message: false
+
+library(tidyverse)
 ```
+
+```{r}
+#| label: importing-biobasis-data
+
+biobasis_ndvi <- readRDS("biobasis_ndvi.rds") |> 
+  mutate(plot_id = paste0(Species,Plot))
+
+ndvi_biobasis_dates <- biobasis_ndvi |> 
+  distinct(Date)
+```
+
+There are measurements from `r min(biobasis_ndvi$Date)` and `r max(biobasis_ndvi$Date)`, and from a total of `r length(unique(biobasis_ndvi$Date))` individual days of measurements from the `r length(unique(biobasis_ndvi$plot_id))` plots.
+
+## Sentinel 'sampling'
+
+Sentinel derived NDVI values were extracted by Google Earth Engine and process in R. To ensure high temporal correspondence between the Sentinel derived NDVI and the plot measured NDVI only sentinel images from with in +/- 2 days from of a plot measurement were used.
+
+ADJUST THE GEE CODE TO ONLY TAKE THE ONE IMAGE THAT IS CLOSEST TO THE NDVI DATE!
+
+# Comparison
 
 You can add options to executable code like this
 
 ```{r}
 #| echo: false
-2 * 2
+
 ```
 
 The `echo: false` option disables the printing of code (only output is displayed).
