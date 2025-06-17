@@ -35,6 +35,8 @@ NDVI have been measured as part of the BioBasis Nuuk sampling protocal since 200
 #| message: false
 
 library(tidyverse)
+library(ggplot2)
+library(ggpmisc)
 ```
 
 ```{r}
@@ -52,29 +54,46 @@ There are measurements from `r min(biobasis_ndvi$Date)` and `r max(biobasis_ndvi
 NDVI is measured as a mean (calculated by the RapidScan) for each subsection of the phenology plot. For the comparison with Sentinel a further mean is calculate pr plot.
 
 ```{r}
-#| label: data-prep-comparison
+#| label: data-import-com
 
-biobasis_ndvi_meanprplot <- biobasis_ndvi |> 
-  group_by(Date, plot_id) |> 
-  summarise(mean = mean(NDVI), 
-            year = mean(year(Date)))
 
 
 ```
 
+
 ## Sentinel 'sampling'
 
-Sentinel derived NDVI values were extracted by Google Earth Engine and process in R. To ensure high temporal correspondence between the Sentinel derived NDVI and the plot measured NDVI only sentinel images from with in +/- 2 days from of a plot measurement were used.
+Sentinel derived NDVI values were extracted by Google Earth Engine and process in R. To ensure high temporal correspondence between the Sentinel derived NDVI and the plot measured NDVI only sentinel images from with in +/- 2 days from of a plot measurement were used and a cloud filter of 20 % was applied.
 
-ADJUST THE GEE CODE TO ONLY TAKE THE ONE IMAGE THAT IS CLOSEST TO THE NDVI DATE!
 
 # Comparison
 
-You can add options to executable code like this
+
 
 ```{r}
 #| echo: false
 
+ndvi_joined <- readRDS("~/Library/CloudStorage/OneDrive-Aarhusuniversitet/MappingPlants/r_generel/ndvi-comparison/ndvi-comparison/data/ndvi_joined.rds") |> 
+  mutate(year = year(targetdate))
+
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+There are Sentinel data available from `r dplyr::n_distinct(ndvi_joined$image_date, na.rm = TRUE)` days out of `r dplyr::n_distinct(ndvi_joined$targetdate, na.rm = TRUE)` between `r min(ndvi_joined$targetdate)` and `r max(ndvi_joined$targetdate)` with the mentioned restrictions.
+
+```{r}
+#| label: fig-ndvi-compare-gps
+#| echo: false
+#| warning: false
+
+
+ggplot(ndvi_joined, aes(x = ndvi_rapid, y = ndvi_senti, color = as.factor(year))) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  stat_poly_eq(
+    aes(label = paste(..eq.label.., ..rr.label.., ..p.value.label.., sep = "~~~")),
+    formula = y ~ x,
+    parse = TRUE
+  )+
+    xlim(0, 1)+ylim(0,1)+
+  geom_abline(intercept = 0, slope = 1)
+```
