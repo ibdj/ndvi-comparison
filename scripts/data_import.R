@@ -32,10 +32,26 @@ merged_data <- files |>
 
 #### joining the data ####
 ndvi_joined <- biobasis_ndvi |> 
-  left_join(merged_data, by = c('targetdate', 'plot_id'))
+  left_join(merged_data, by = c('targetdate', 'plot_id')) |> 
+  filter(NDVI > 0) |> 
+  group_by(targetdate, plot_id, image_date) |>
+  summarise(ndvi_rapid = mean(NDVI),
+            ndvi_senti = mean(ndvi))
 
-ggplot(ndvi_joined, aes(x = NDVI, y = ndvi))+
-  geom_point()+
-  coord_cartesian(xlim = c(0, 1), ylim = c(0, 1))+
-  geom_smooth(method = lm)
+summary(ndvi_joined)
 
+write_rds(ndvi_joined, "data/ndvi_joined.rds")
+
+
+
+
+#### checking how many days have gee data #####
+
+days_compared <- ndvi_joined |> 
+  group_by(targetdate)  |> 
+  summarise(
+    first_image_date = first(na.omit(image_date)),
+    n_non_na_image_date = sum(!is.na(image_date)),
+    n_rows = n(),
+    .groups = "drop"
+  )
