@@ -37,6 +37,7 @@ NDVI have been measured as part of the BioBasis Nuuk sampling protocal since 200
 library(tidyverse)
 library(ggplot2)
 library(ggpmisc)
+library(glue)
 ```
 
 ```{r}
@@ -63,7 +64,7 @@ NDVI is measured as a mean (calculated by the RapidScan) for each subsection of 
 
 ## Sentinel 'sampling'
 
-Sentinel derived NDVI values were extracted by Google Earth Engine and process in R. To ensure high temporal correspondence between the Sentinel derived NDVI and the plot measured NDVI only sentinel images from with in +/- 2 days from of a plot measurement were used and a cloud filter of 20 % was applied.
+Sentinel derived NDVI values were extracted by Google Earth Engine and process in R. To ensure high temporal correspondence between the Sentinel derived NDVI and the plot measured NDVI only sentinel images from with in +/- 2 days from of a plot measurement were used and a cloud filter of 20 % was applied. Only one image pr measurements. If multiple image were available with in the 4 day window of the plot measurement only the one closest to the sampling day was used.
 
 
 # Comparison
@@ -74,17 +75,19 @@ Sentinel derived NDVI values were extracted by Google Earth Engine and process i
 #| echo: false
 
 ndvi_joined <- readRDS("~/Library/CloudStorage/OneDrive-Aarhusuniversitet/MappingPlants/r_generel/ndvi-comparison/ndvi-comparison/data/ndvi_joined.rds") |> 
-  mutate(year = year(targetdate))
+  mutate(year = year(targetdate),
+         diff = abs(as.numeric(difftime(targetdate, image_date, units = "days"))))
 
 ```
 
-There are Sentinel data available from `r dplyr::n_distinct(ndvi_joined$image_date, na.rm = TRUE)` days out of `r dplyr::n_distinct(ndvi_joined$targetdate, na.rm = TRUE)` between `r min(ndvi_joined$targetdate)` and `r max(ndvi_joined$targetdate)` with the mentioned restrictions.
+There are Sentinel data available from `r dplyr::n_distinct(ndvi_joined$image_date, na.rm = TRUE)` days out of `r dplyr::n_distinct(ndvi_joined$targetdate, na.rm = TRUE)` (`r round(dplyr::n_distinct(ndvi_joined$image_date, na.rm = TRUE)/dplyr::n_distinct(ndvi_joined$targetdate, na.rm = TRUE)*100,2)` %) between `r min(ndvi_joined$targetdate)` and `r max(ndvi_joined$targetdate)` with the mentioned restrictions. On average there is a `r round(mean(ndvi_joined$diff, na.rm = TRUE),2)` day difference between the plot measurement and the Sentinel iamge sampled. 
 
 ```{r}
-#| label: fig-ndvi-compare-gps
+#| label: fig-ndvi-compare-gps-year
+#| fig-scap: "All NDVI Sentinel vs RapidScan"
+#| fig-cap: !expr glue("Ground measured NDVI compared to Sentinel2 remotely sensed NDVI. Regression made pr. year")
 #| echo: false
 #| warning: false
-
 
 ggplot(ndvi_joined, aes(x = ndvi_rapid, y = ndvi_senti, color = as.factor(year))) +
   geom_point() +
@@ -93,7 +96,26 @@ ggplot(ndvi_joined, aes(x = ndvi_rapid, y = ndvi_senti, color = as.factor(year))
     aes(label = paste(..eq.label.., ..rr.label.., ..p.value.label.., sep = "~~~")),
     formula = y ~ x,
     parse = TRUE
-  )+
-    xlim(0, 1)+ylim(0,1)+
+    )+
+  xlim(0, 1)+ylim(0,1)+
+  geom_abline(intercept = 0, slope = 1)
+```
+
+```{r}
+#| label: fig-ndvi-compare-gps-month
+#| fig-scap: "All NDVI Sentinel vs RapidScan"
+#| fig-cap: !expr glue("Ground measured NDVI compared to Sentinel2 remotely sensed NDVI. Regression made pr month.")
+#| echo: false
+#| warning: false
+
+ggplot(ndvi_joined, aes(x = ndvi_rapid, y = ndvi_senti, color = as.factor(month(targetdate)))) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  stat_poly_eq(
+    aes(label = paste(..eq.label.., ..rr.label.., ..p.value.label.., sep = "~~~")),
+    formula = y ~ x,
+    parse = TRUE
+    )+
+  xlim(0, 1)+ylim(0,1)+
   geom_abline(intercept = 0, slope = 1)
 ```
