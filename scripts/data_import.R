@@ -10,7 +10,8 @@ Biobasis_Nuuk_PhenologyPlots_NDVI <- read_excel("~/Library/CloudStorage/OneDrive
 write_rds(Biobasis_Nuuk_PhenologyPlots_NDVI, "data/biobasis_ndvi.rds")
 
 biobasis_ndvi <- read_rds("data/biobasis_ndvi.rds") |> 
-  mutate(plot_id = paste0(Species,Plot)) |> 
+  mutate(plot_id = paste0(Species,Plot),
+         plot_id_section = paste0(Species,Plot,Section)) |> 
   rename(targetdate = Date)
    
 names(biobasis_ndvi)                                                            
@@ -22,15 +23,20 @@ View(biobasis_ndvi)
 folder_path <- "~/Library/CloudStorage/OneDrive-Aarhusuniversitet/MappingPlants/r_generel/ndvi-comparison/ndvi-comparison/data"
 
 # List all CSV files
-files <- list.files(path = folder_path, pattern = "\\.csv$", full.names = TRUE)
+files <- list.files(path = folder_path, pattern = "_rtk\\.csv$", full.names = TRUE)
 
-# Read and merge all CSVs
 merged_data <- files |> 
   lapply(read_csv) |> 
-  bind_rows() |> 
-  mutate(plot_id = ident)
+  bind_rows(.id = "source_file") |> 
+  mutatute(plot_id_section)
+
+summary(merged_data)
 
 #### joining the data ####
+
+names(merged_data)
+names(biobasis_ndvi)
+
 ndvi_joined <- biobasis_ndvi |> 
   left_join(merged_data, by = c('targetdate', 'plot_id')) |> 
   filter(NDVI > 0) |> 
@@ -40,10 +46,7 @@ ndvi_joined <- biobasis_ndvi |>
 
 summary(ndvi_joined)
 
-write_rds(ndvi_joined, "data/ndvi_joined.rds")
-
-
-
+write_rds(ndvi_joined, "data/ndvi_joined_gps.rds")
 
 #### checking how many days have gee data #####
 
